@@ -427,7 +427,9 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
                   <span className="ml-2 text-xs opacity-70">
                     {formatTime(message.timestamp)}
                   </span>
+                  {message.documents && <div className="ml-auto inline-block bg-amber-600 text-white rounded-md px-2 w-auto text-sm">检索到相关文档: {message.documents.length}</div>}
                 </div>
+
 
                 <div
                   className={`prose max-w-none ${
