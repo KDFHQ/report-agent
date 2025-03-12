@@ -10,6 +10,9 @@ COPY frontend/package.json frontend/yarn.lock* ./
 # 安装 yarn（如果镜像中没有预装）
 RUN apk add --no-cache yarn || true
 
+# 配置 yarn 使用淘宝镜像源
+RUN yarn config set registry https://registry.npmmirror.com
+
 # 安装依赖
 RUN yarn install --frozen-lockfile
 
