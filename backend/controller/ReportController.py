@@ -320,7 +320,7 @@ async def table_figure(para_id: str, page_num: str, ai_type: str):
                 file_iterator(file_content),
                 media_type=content_type
             )
-            stream_response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+            stream_response.headers["Content-Disposition"] = f'inline; filename="{filename}"'
             # 设置缓存控制头
             stream_response.headers["Cache-Control"] = "public, max-age=720000"
             stream_response.headers["ETag"] = etag
