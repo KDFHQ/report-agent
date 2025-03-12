@@ -5,13 +5,13 @@ FROM node:18-alpine AS frontend-build
 WORKDIR /app/frontend
 
 # 复制前端项目文件
-COPY frontend/package.json frontend/package-lock.json* ./
+COPY frontend/package.json frontend/yarn.lock* ./
+
+# 安装 yarn（如果镜像中没有预装）
+RUN apk add --no-cache yarn || true
 
 # 安装依赖
-RUN npm install -g yarn
-
-# 安装依赖
-RUN yarn
+RUN yarn install --frozen-lockfile
 
 # 复制前端源代码
 COPY frontend/ ./
