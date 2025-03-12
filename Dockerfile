@@ -21,6 +21,8 @@ RUN yarn build
 
 # 使用 Python 镜像来运行后端
 FROM python:3.13.0
+# 安装 Vim 编辑器。
+RUN apt-get update && apt-get install -y vim && rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
 WORKDIR /app
