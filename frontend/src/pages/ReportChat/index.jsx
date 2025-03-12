@@ -286,7 +286,7 @@ export default observer(function ReportChat() {
             chat_store.selected_session.messages[相关索引].documents
           }
           pdfUrl={PDF地址}
-          className="w-1/4 shadow"
+          className="w-1/4 shadow overflow-y-auto"
           actTab={显示标签}
           onClick={relatedOnClick}
           onClose={() => 设置显示标签(null)}

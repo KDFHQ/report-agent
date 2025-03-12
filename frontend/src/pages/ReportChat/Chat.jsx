@@ -60,7 +60,7 @@ const ChatComponent = ({ className, data, onSendMessage }) => {
 
 const fetchParaInfo = async (paraId, index_name, message_index) => {
   try {
-    let url = `${api.BASE_URL}/para/${index_name}/${paraId}`
+    let url = `${api.BASE_URL}/report/para/${index_name}/${paraId}`
 
     if (paraId.startsWith("hb_") && index_name == 'yanbao_zs_20250110') {
       url = `${api.BASE_URL}/report/para/newyanbao_main/${paraId}`
