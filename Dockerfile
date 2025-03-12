@@ -20,7 +20,7 @@ COPY frontend/ ./
 RUN yarn build
 
 # 使用 Python 镜像来运行后端
-FROM python:3.9-slim
+FROM python:3.13.0
 
 # 设置工作目录
 WORKDIR /app
