@@ -34,6 +34,8 @@ async def forward_request(request: Request, user = Depends(verify_token)):
         data['history'] = None
         data['date_filter'] = 'auto'
         data['embedding_version'] = 3
+        if 'engine' not in data:
+            data['engine'] = 'custom-model-20250213'
         # 验证必要字段
         required_fields = ['index_name', 'question']
         for field in required_fields:

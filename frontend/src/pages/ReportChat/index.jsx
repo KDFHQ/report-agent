@@ -49,6 +49,16 @@ function LeftMenu({ className }) {
       icon: <Icon name="yanbao" />,
       label: "英文研报",
     },
+    {
+      key: "notice",
+      icon: <Icon name="yanbao" />,
+      label: "公告问答",
+    },
+    {
+      key: "news",
+      icon: <Icon name="yanbao" />,
+      label: "新闻问答",
+    },
   ];
 
   // 处理鼠标移入事件
@@ -83,11 +93,9 @@ function LeftMenu({ className }) {
 }
 
 export default observer(function ReportChat() {
-  const tabActive = useRef(null);
-  const imageData = useRef(null);
-  const [PDF地址, 设置PDF地址] = useState(null)
+  const [显示项, 设置显示项] = useState(null);
+  const [显示PDF的数据, 设置显示PDF的数据] = useState(null);
   const [显示标签, 设置显示标签] = useState(null);
-  const [相关索引, 设置相关索引] = useState(null);
   const { type } = useParams();
   const type_obj = {
     cn: {
@@ -95,6 +103,12 @@ export default observer(function ReportChat() {
     },
     en: {
       index_name: "newyanbao_eng_main",
+    },
+    notice: {
+      index_name: "notice_main",
+    },
+    news: {
+      index_name: "news_main",
     },
   };
 
@@ -128,9 +142,10 @@ export default observer(function ReportChat() {
       chat_store.sessions.set(res.data.session_id, res.data);
       chat_store.setSelectedSessionId(res.data.session_id);
     }
+    const default_content = "思考中...";
     const answer = {
       role: "robot",
-      content: "思考中...",
+      content: default_content,
       index_name: type_obj[type].index_name,
       timestamp: createFormattedTime(),
     };
@@ -148,6 +163,8 @@ export default observer(function ReportChat() {
       ],
     };
     chat_store.sessions.set(chat_store.selected_session_id, new_session);
+    let all_think = "";
+    let all_content = "";
     await user.talkLLM(
       {
         collection_name: "newyanbao_main",
@@ -166,17 +183,28 @@ export default observer(function ReportChat() {
               if ("documents" in json_data) {
                 answer.documents = json_data.documents;
               }
-              if (json_data.data) {
-                if (answer.content == "思考中...") {
-                  answer.content = json_data.data;
-                } else {
-                  answer.content += json_data.data;
+              if (json_data.data || json_data.reasoning) {
+                if (json_data.data) {
+                  if (all_content === default_content) {
+                    all_content = json_data.data;
+                  } else {
+                    all_content += json_data.data;
+                  }
                 }
+                if (json_data.reasoning) {
+                  all_think += json_data.reasoning;
+                }
+                if (all_think) {
+                  answer.content =
+                    "<think>" + all_think + "</think>\n\n" + all_content;
+                } else {
+                  answer.content = all_content;
+                }
+                chat_store.sessions.set(
+                  chat_store.selected_session_id,
+                  new_session
+                );
               }
-              chat_store.sessions.set(
-                chat_store.selected_session_id,
-                new_session
-              );
             }
           });
         } catch (err) {
@@ -232,18 +260,14 @@ export default observer(function ReportChat() {
     index_name
   ) => {
     设置显示标签("yinyong");
-    设置相关索引(index);
-    设置PDF地址(`${api.BASE_URL}/report/pdf/page_pdf/${msg}/${page_num}/${index_name}`)
-    imageData.current = {
+    设置显示PDF的数据({
       query: msg,
-      paraId: paraId,
-      ai_type: index_name,
-      ai_type2: index_name,
-      page_num: page_num,
-      message_index: index,
-      pointer: pointer,
-      file_name: file_name,
-    };
+      pointer,
+      page: page_num,
+      paraId,
+      index_name: chat_store.selected_session.messages[index].index_name,
+    });
+    设置显示项(chat_store.selected_session.messages[index]);
   };
 
   useEffect(() => {
@@ -260,8 +284,6 @@ export default observer(function ReportChat() {
         selectSessionId={chat_store.selected_session_id}
         onItemClick={(id) => {
           设置显示标签(null);
-          设置相关索引(null);
-          设置PDF地址(null)
           if (chat_store.selected_session_id == id) {
             chat_store.setSelectedSessionId(null);
           } else {
@@ -278,17 +300,28 @@ export default observer(function ReportChat() {
             ? chat_store.selected_session.messages
             : []
         }
+        onRelatedClick={(session) => {
+          设置显示标签("related");
+          设置显示项(session);
+        }}
         onSendMessage={sendMessage}
       />
       {显示标签 && (
         <Related
-          relatedItems={
-            chat_store.selected_session.messages[相关索引].documents
-          }
-          pdfUrl={PDF地址}
+          relatedItems={显示项.documents}
+          imageData={显示PDF的数据}
           className="w-1/4 shadow overflow-y-auto"
           actTab={显示标签}
-          onClick={relatedOnClick}
+          onActTabChange={设置显示标签}
+          onClick={(query, paraId) => {
+            设置显示标签("yinyong");
+            设置显示PDF的数据({
+              query,
+              page: 0,
+              index_name: 显示项.index_name,
+              paraId,
+            });
+          }}
           onClose={() => 设置显示标签(null)}
         />
       )}

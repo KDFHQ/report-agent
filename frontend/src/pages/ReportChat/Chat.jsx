@@ -17,8 +17,10 @@ import api from "@/worker/api";
 // 使用 Tailwind CSS 进行样式设计
 
 const relatedInfo = {}
-const ChatComponent = ({ className, data, onSendMessage }) => {
+const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
   const figureCount = useRef(0)
+  const tableCount = useRef(0)
+  const [show_img_id, setShowImgId] = useState([])
   const [messages, setMessages] = useState(data);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,8 +53,8 @@ const ChatComponent = ({ className, data, onSendMessage }) => {
   };
 
   // 复制消息内容并显示提示
-  const copyMessage = (content) => {
-    navigator.clipboard.writeText(content);
+  const copyMessage = (id) => {
+    navigator.clipboard.writeText(document.getElementById(id).textContent);
     message.success("内容已复制到剪贴板");
   };
 
@@ -90,15 +92,15 @@ const fetchParaInfo = async (paraId, index_name, message_index) => {
         para: obj.para,
         doc_id: obj.doc_id,
         page_num: obj.page_num,
-        dom: `<small class="text-xs"> From <span class="text-gray-400 cursor-pointer hover:text-gray-500" onclick="relatedOnClick('${
+        dom: `<small class="block text-xs"> 来自 <span class="text-gray-400 cursor-pointer hover:text-gray-500" onclick="relatedOnClick('${
           obj.doc_id
         }', '${paraId}', ${obj.page_num}, ${message_index}, { x: ${
           obj.para_element_x
         }, y: ${obj.para_element_y}, w: ${obj.para_element_w}, h: ${
           obj.para_element_h
-        }}, '${obj.title}')">《${obj.title}》</span> ${obj.doc_date} Page ${
+        }}, '${obj.title}')">《${obj.title}》</span> ${obj.doc_date} 第 ${
           obj.page_num + 1
-        }</small>`,
+        } 页</small>`,
         img_dom: ""
       };
     }
@@ -231,8 +233,8 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
       const tableId = msg.slice(6);
       if (!(msg in relatedInfo)) {
         relatedInfo[msg] = { is_over: false };
-        tableCount.value++;
-        fetchTableInfo(tableId, tableCount.value, index_nam, message_index).then((info) => {
+        tableCount.current++;
+        fetchTableInfo(tableId, tableCount.current, index_name, message_index).then((info) => {
           if (info) {
             relatedInfo[msg] = { is_over: true, data: info };
           }
@@ -312,12 +314,12 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
           if (show_img_id.indexOf(id) != -1) {
             ret_dom =
               ret_dom +
-              `<span class="text-xs ml-1" onclick="setShowImgId('${id}')">▼</span>` +
+              `<span class="text-xs ml-1 cursor-pointer" onclick="setShowImgId('${id}')">▼</span>` +
               related_info.img_dom;
           } else {
             ret_dom =
               ret_dom +
-              `<span class="text-xs ml-1" onclick="setShowImgId('${id}')">◄</span>`;
+              `<span class="text-xs ml-1 cursor-pointer" onclick="setShowImgId('${id}')">◄</span>`;
           }
         } else {
           ret_dom = ret_dom + related_info.img_dom;
@@ -427,13 +429,14 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
                   <span className="ml-2 text-xs opacity-70">
                     {formatTime(message.timestamp)}
                   </span>
-                  {message.documents && <div className="ml-auto inline-block bg-amber-600 text-white rounded-md px-2 w-auto text-sm">检索到相关文档: {message.documents.length}</div>}
+                  {message.documents && <div className="ml-auto inline-block bg-amber-600 text-white rounded-md px-2 w-auto cursor-pointer text-sm" onClick={() => onRelatedClick(message)}>检索到相关文档: {message.documents.length}</div>}
                 </div>
 
 
                 <div
+                  id={`copy_area_${index}`}
                   className={`prose max-w-none ${
-                    message.role === "user" ? "text-white" : "text-gray-800"
+                    message.role === "user" ? "text-white" : "text-gray-800 markdown"
                   }`}
                 >
                   {message.role === "user" ? (
@@ -486,7 +489,7 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
                       type="text"
                       size="small"
                       icon={<CopyOutlined />}
-                      onClick={() => copyMessage(message.content)}
+                      onClick={() => copyMessage(`copy_area_${index}`)}
                       className={`hover:opacity-80 transition-opacity ${
                         message.role === "user"
                           ? "text-blue-100"

@@ -104,7 +104,7 @@ export default function History({
               dataSource={[...sessions].map((item) => item[1])}
               renderItem={(item) => (
                 <List.Item
-                  className={`group !px-3 py-2 border-b ${
+                  className={`group !px-3 py-2 w-full border-b ${
                     selectSessionId == item.session_id ? "!bg-gray-200" : ""
                   } hover:bg-gray-50 transition-colors cursor-pointer `}
                   onClick={e => {
@@ -113,9 +113,9 @@ export default function History({
                   }}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center">
+                    <div className="flex items-center w-[calc(100%-25px)]">
                       <MessageOutlined className="text-gray-400 mr-3" />
-                      <div className="truncate max-w-[240px]">
+                      <div className="truncate">
                         {item.title || "无标题对话"}
                       </div>
                     </div>
@@ -132,7 +132,7 @@ export default function History({
                         icon={<DeleteOutlined />}
                         danger
                         size="small"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         aria-label="删除对话"
                         onClick={(e) => e.stopPropagation()}
                       />
