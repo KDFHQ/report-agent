@@ -1,0 +1,4 @@
+*.py[cod]
+/config/local_params.py
+/docker-compose.yml
+/frontend
