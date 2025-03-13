@@ -5,18 +5,20 @@ import {
   UserOutlined,
   RobotOutlined,
   CopyOutlined,
+  LeftOutlined,
 } from "@ant-design/icons";
 import user from "@/worker/user";
 import api from "@/worker/api";
-import ReactMarkdown from './ReactMarkdown'
+import ReactMarkdown from "./ReactMarkdown";
 
 // 使用 Tailwind CSS 进行样式设计
 
 const relatedInfo = {};
 const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
+  const [隐藏的索引, 设置隐藏的索引] = useState([]);
   const figureCount = useRef(0);
   const tableCount = useRef(0);
-  const chatContainer = useRef(null)
+  const chatContainer = useRef(null);
   const [show_img_id, setShowImgIdOrigin] = useState([]);
   const [相关请求更新, 设置相关请求更新] = useState(0);
   const [input, setInput] = useState("");
@@ -190,7 +192,7 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
         fetchParaInfo(paraId, index_name, message_index).then((info) => {
           if (info) {
             relatedInfo[msg] = { is_over: true, data: info };
-            设置相关请求更新(n => (n + 1));
+            设置相关请求更新((n) => n + 1);
           }
         });
       }
@@ -209,7 +211,7 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
         ).then((info) => {
           if (info) {
             relatedInfo[msg] = { is_over: true, data: info };
-            设置相关请求更新(n => (n + 1));
+            设置相关请求更新((n) => n + 1);
           }
         });
       }
@@ -228,7 +230,7 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
         ).then((info) => {
           if (info) {
             relatedInfo[msg] = { is_over: true, data: info };
-            设置相关请求更新(n => (n + 1));
+            设置相关请求更新((n) => n + 1);
           }
         });
       }
@@ -249,7 +251,11 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
   };
 
   const customMarked = (item, message_index) => {
-    let text = item.content;
+    let text = "";
+    if (item.think) {
+      text = `<think>${item.think}</think>\n\n`;
+    }
+    text += item.content;
     const name_map = new Map();
     if ("short_id_mapping" in item) {
       item.short_id_mapping.forEach((item) => {
@@ -259,8 +265,6 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
     if (text.indexOf("<think>") != -1 && text.indexOf("</think>") == -1) {
       text += "</think>";
     }
-    text = text.replace("<think>", "<div id='think'>");
-    text = text.replace("</think>", "</div>");
 
     const img_num = {};
 
@@ -314,25 +318,36 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
     const regex = /<\/?del>/gi;
     text = text.replace(regex, "~");
 
-    // console.log(text)
+    let think = "";
+    const think_start = text.indexOf("<think>");
+    if (think_start !== -1) {
+      const think_end = text.indexOf("</think>");
+      if (think_end !== -1) {
+        think = text.slice(think_start, think_end);
+        text = text.slice(0, think_start) + text.slice(think_end);
+      } else {
+        think = text.slice(think_start, think_end);
+        text = "";
+      }
+    }
 
     return {
-      think: "",
-      content: text
+      think,
+      content: text,
     };
   };
 
   const messages = useMemo(() => {
     return data.map((item, index) => {
-      let cp_item = {...item}
+      let cp_item = { ...item };
       if (cp_item.role != "user") {
-        const answer = customMarked(cp_item, index)
-        cp_item.think = answer.think || cp_item.think
-        cp_item.content = answer.content
+        const answer = customMarked(cp_item, index);
+        cp_item.think = answer.think || cp_item.think;
+        cp_item.content = answer.content;
       }
-      return cp_item
-    })
-  }, [data, customMarked, 相关请求更新])
+      return cp_item;
+    });
+  }, [data, customMarked, 相关请求更新]);
 
   // 自动滚动到最新消息
   const scrollToBottom = () => {
@@ -348,10 +363,8 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
       // deltaY 属性表示垂直滚动方向
       // 正值表示向下滚动，负值表示向上滚动
       if (element.deltaY > 0) {
-        console.log('向下滚动');
         setUserScrolled(false);
       } else if (element.deltaY < 0) {
-        console.log('向上滚动');
         setUserScrolled(true);
       }
     };
@@ -518,9 +531,36 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
                       {message.content}
                     </p>
                   ) : (
-                    <ReactMarkdown>
-                      {message.content}
-                    </ReactMarkdown>
+                    <>
+                      {message.think && <div className="flex flex-col mb-2">
+                        <div
+                          className="flex items-center bg-blue-400 text-white rounded-md px-2 mr-auto cursor-pointer"
+                          onClick={() =>
+                            设置隐藏的索引((ids) => {
+                              if (ids.indexOf(index) === -1) {
+                                // 如果不存在，就添加
+                                return [...ids, index];
+                              } else {
+                                // 如果存在，就删除
+                                return ids.filter((item) => item !== index);
+                              }
+                            })
+                          }
+                        >
+                          点击{隐藏的索引.indexOf(index) == -1 ? "隐藏" : "展开"}思考内容
+                          <LeftOutlined
+                            className="ml-1 mt-[1px]"
+                            rotate={隐藏的索引.indexOf(index) == -1 ? -90 : 180}
+                          />
+                        </div>
+                        {隐藏的索引.indexOf(index) == -1 && (
+                          <div className="think my-1">
+                            <ReactMarkdown>{message.think}</ReactMarkdown>
+                          </div>
+                        )}
+                      </div>}
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </>
                   )}
                 </div>
 

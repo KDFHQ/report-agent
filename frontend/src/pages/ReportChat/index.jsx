@@ -202,6 +202,7 @@ export default observer(function ReportChat() {
                 answer.think = json_data.reasoning
               }
             }
+            chat_store.sessions.set(chat_store.selected_session_id, new_session);
           });
         } catch (err) {
           console.log(data);
@@ -302,7 +303,7 @@ export default observer(function ReportChat() {
       />
       <Chat
         key={chat_store.selected_session_id}
-        className="w-4/5 max-w-5xl mx-auto"
+        className="w-full max-w-5xl mx-auto"
         data={
           chat_store.selected_session
             ? chat_store.selected_session.messages
