@@ -12,14 +12,12 @@ function App() {
   useEffect(() => {
     if (!user.is_login) {
       navigate("/login");
+    } else {
+      if (location.pathname == '/') {
+        navigate("/report/cn")
+      }
     }
-  }, [user.is_login]);
-
-  useEffect(() => {
-    if (location.pathname == '/') {
-      navigate("/report/cn")
-    }
-  }, [location.pathname])
+  }, [user.is_login, location.pathname]);
 
   return (
     <Routes>
