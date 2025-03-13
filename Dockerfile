@@ -1,5 +1,5 @@
 # 使用 Node.js 镜像来构建前端
-FROM node:18-alpine AS frontend-build
+FROM node:20-alpine AS frontend-build
 
 # 设置工作目录
 WORKDIR /app/frontend
