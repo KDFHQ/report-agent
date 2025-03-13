@@ -26,6 +26,7 @@ class Document(BaseModel):
 class ChatMessage(BaseModel):
     index_name: str = Field(default=None, description="消息index")
     role: str = Field(..., description="消息角色：user/assistant")
+    think: str = Field(default=None, description="思考内容")
     content: str = Field(..., description="消息内容")
     timestamp: Optional[datetime] = Field(default=None, description="消息时间戳")
     documents: Optional[List[Document]] = Field(default=None, description="相关文档列表")

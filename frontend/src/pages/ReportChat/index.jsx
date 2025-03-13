@@ -34,7 +34,7 @@ function createFormattedTime() {
 }
 
 function LeftMenu({ className }) {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const { type } = useParams();
 
@@ -63,12 +63,12 @@ function LeftMenu({ className }) {
 
   // 处理鼠标移入事件
   const handleMouseEnter = () => {
-    setCollapsed(false);
+    // setCollapsed(false);
   };
 
   // 处理鼠标移出事件
   const handleMouseLeave = () => {
-    setCollapsed(true);
+    // setCollapsed(true);
   };
 
   return (
@@ -154,6 +154,7 @@ export default observer(function ReportChat() {
     const default_content = "思考中...";
     const answer = {
       role: "robot",
+      think: "",
       content: default_content,
       index_name: type_obj[type].index_name,
       timestamp: createFormattedTime(),
@@ -172,8 +173,6 @@ export default observer(function ReportChat() {
       ],
     };
     chat_store.sessions.set(chat_store.selected_session_id, new_session);
-    let all_think = "";
-    let all_content = "";
     await user.talkLLM(
       {
         collection_name: type_obj[type].index_name,
@@ -192,27 +191,15 @@ export default observer(function ReportChat() {
               if ("documents" in json_data) {
                 answer.documents = json_data.documents;
               }
-              if (json_data.data || json_data.reasoning) {
-                if (json_data.data) {
-                  if (all_content === default_content) {
-                    all_content = json_data.data;
-                  } else {
-                    all_content += json_data.data;
-                  }
-                }
-                if (json_data.reasoning) {
-                  all_think += json_data.reasoning;
-                }
-                if (all_think) {
-                  answer.content =
-                    "<think>" + all_think + "</think>\n\n" + all_content;
+              if (json_data.data) {
+                if (answer.content == default_content) {
+                  answer.content = json_data.data
                 } else {
-                  answer.content = all_content;
+                  answer.content += json_data.data
                 }
-                chat_store.sessions.set(
-                  chat_store.selected_session_id,
-                  new_session
-                );
+              }
+              if (json_data.reasoning) {
+                answer.think = json_data.reasoning
               }
             }
           });
@@ -279,9 +266,20 @@ export default observer(function ReportChat() {
     设置显示项(chat_store.selected_session.messages[index]);
   };
 
+  const onCreate = () => {
+    chat_store.setSelectedSessionId(null)
+    设置显示标签(null);
+    设置显示PDF的数据(null);
+    设置显示项(null);
+  }
+
   useEffect(() => {
     window.relatedOnClick = relatedOnClick;
   }, []);
+
+  useEffect(() => {
+    onCreate()
+  }, [type])
 
   return (
     <div className="flex w-full h-full">
@@ -300,16 +298,11 @@ export default observer(function ReportChat() {
           }
         }}
         onDelete={deleteChatSession}
-        onCreate={() => {
-          chat_store.setSelectedSessionId(null)
-          设置显示标签(null);
-          设置显示PDF的数据(null);
-          设置显示项(null);
-        }}
+        onCreate={onCreate}
       />
       <Chat
         key={chat_store.selected_session_id}
-        className="flex-1"
+        className="w-4/5 max-w-5xl mx-auto"
         data={
           chat_store.selected_session
             ? chat_store.selected_session.messages

@@ -1,255 +1,186 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Input, Button, Avatar, Spin, Tooltip, message } from "antd";
 import {
   SendOutlined,
   UserOutlined,
   RobotOutlined,
   CopyOutlined,
-  DeleteOutlined,
 } from "@ant-design/icons";
-import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import rehypeRaw from "rehype-raw";
 import user from "@/worker/user";
 import api from "@/worker/api";
+import ReactMarkdown from './ReactMarkdown'
 
 // 使用 Tailwind CSS 进行样式设计
 
-const relatedInfo = {}
+const relatedInfo = {};
 const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
-  const figureCount = useRef(0)
-  const tableCount = useRef(0)
-  const [show_img_id, setShowImgId] = useState([])
-  const [messages, setMessages] = useState(data);
+  const figureCount = useRef(0);
+  const tableCount = useRef(0);
+  const chatContainer = useRef(null)
+  const [show_img_id, setShowImgIdOrigin] = useState([]);
+  const [相关请求更新, 设置相关请求更新] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  
-
-  // 自动滚动到最新消息
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // 跟踪用户是否手动滚动
-  const [userScrolled, setUserScrolled] = useState(false);
-  
-  // 监听滚动事件
-  useEffect(() => {
-    const handleScroll = (e) => {
-      const element = e.target;
-      const isAtBottom = Math.abs(element.scrollHeight - element.scrollTop - element.clientHeight) < 10;
-      
-      // 如果用户向上滚动，标记为已滚动
-      if (!isAtBottom) {
-        setUserScrolled(true);
+  function setShowImgId(id) {
+    setShowImgIdOrigin((ids) => {
+      if (ids.indexOf(id) === -1) {
+        // 如果不存在，就添加
+        return [...ids, id];
       } else {
-        // 如果滚动到底部，重置标记
-        setUserScrolled(false);
+        // 如果存在，就删除
+        return ids.filter((item) => item !== id);
       }
-    };
-    
-    const chatContainer = document.querySelector('.overflow-y-auto');
-    if (chatContainer) {
-      chatContainer.addEventListener('scroll', handleScroll);
-    }
-    
-    return () => {
-      if (chatContainer) {
-        chatContainer.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, []);
+    });
+  }
 
-  useEffect(() => {
-    // 只有在用户没有手动滚动时，或消息列表为空时才自动滚动
-    if (!userScrolled || messages.length === 0) {
-      scrollToBottom();
-    }
-  }, [messages, userScrolled]);
-
-  // 模拟发送消息给 LLM 并获取回复
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    setInput("");
-    setLoading(true);
-
+  const fetchParaInfo = async (paraId, index_name, message_index) => {
     try {
-      await onSendMessage(input.trim());
-    } catch (error) {
-      console.error("Error fetching response:", error);
-      // 可以添加错误消息到对话中
-    } finally {
-      setLoading(false);
-    }
-  };
+      let url = `${api.BASE_URL}/report/para/${index_name}/${paraId}`;
 
-  // 复制消息内容并显示提示
-  const copyMessage = (id) => {
-    navigator.clipboard.writeText(document.getElementById(id).textContent);
-    message.success("内容已复制到剪贴板");
-  };
-
-  
-
-const fetchParaInfo = async (paraId, index_name, message_index) => {
-  try {
-    let url = `${api.BASE_URL}/report/para/${index_name}/${paraId}`
-
-    if (paraId.startsWith("hb_") && index_name == 'yanbao_zs_20250110') {
-      url = `${api.BASE_URL}/report/para/newyanbao_main/${paraId}`
-    }
-    const response = await fetch(
-      url,
-      {
+      if (paraId.startsWith("hb_") && index_name == "yanbao_zs_20250110") {
+        url = `${api.BASE_URL}/report/para/newyanbao_main/${paraId}`;
+      }
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${user.token}`
+          Authorization: `Bearer ${user.token}`,
         },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+
+      if (data.data) {
+        const obj = data.data;
+        return {
+          title: obj.title,
+          para: obj.para,
+          doc_id: obj.doc_id,
+          page_num: obj.page_num,
+          dom: `<small class="block text-xs"> 来自 <span class="text-gray-400 cursor-pointer hover:text-gray-500" onclick="relatedOnClick('${
+            obj.doc_id
+          }', '${paraId}', ${obj.page_num}, ${message_index}, { x: ${
+            obj.para_element_x
+          }, y: ${obj.para_element_y}, w: ${obj.para_element_w}, h: ${
+            obj.para_element_h
+          }}, '${obj.title}')">《${obj.title}》</span> ${obj.doc_date} 第 ${
+            obj.page_num + 1
+          } 页</small>`,
+          img_dom: "",
+        };
+      }
+    } catch (error) {
+      console.error("fetchParaInfo error", paraId, error);
+      return null;
     }
+  };
 
-    const data = await response.json();
+  const fetchTableInfo = async (tableId, count, index_name, message_index) => {
+    try {
+      const response = await fetch(`${api.BASE_URL}/report/table_info`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          index_name,
+          collection_name: index_name,
+          query: tableId,
+        }),
+      });
 
-    if (data.data) {
-      const obj = data.data;
-      setMessages(his => [...his])
-      return {
-        title: obj.title,
-        para: obj.para,
-        doc_id: obj.doc_id,
-        page_num: obj.page_num,
-        dom: `<small class="block text-xs"> 来自 <span class="text-gray-400 cursor-pointer hover:text-gray-500" onclick="relatedOnClick('${
-          obj.doc_id
-        }', '${paraId}', ${obj.page_num}, ${message_index}, { x: ${
-          obj.para_element_x
-        }, y: ${obj.para_element_y}, w: ${obj.para_element_w}, h: ${
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      let obj = data.data[0];
+
+      if (obj) {
+        const onclick = `relatedOnClick('${obj.doc_id}', '${tableId}', ${obj.page_num}, ${message_index}, { x: ${obj.para_element_x}, y: ${obj.para_element_y}, w: ${obj.para_element_w}, h: ${obj.para_element_h}}, '${obj.title}')`;
+        return {
+          title: obj.title,
+          para: obj.para,
+          doc_id: obj.doc_id,
+          page_num: obj.page_num,
+          dom: `<div class="img-title text-xs inline">【表${count}】：<span class="text-gray-400 cursor-pointer hover:text-gray-500" onclick="${onclick}">《${
+            obj.title
+          }》</span> ${obj.doc_date} 第${obj.page_num + 1}页</div>`,
+          img_dom: `<img title="点击图片可以查看图片来源" onclick="${onclick}" src="${api.BASE_URL}/table_figure/${index_name}/${tableId}" />`,
+        };
+      }
+    } catch (e) {
+      console.error("fetchTableInfo error", tableId, e);
+    }
+    return null;
+  };
+
+  const fetchFigureInfo = async (
+    figureId,
+    count,
+    index_name,
+    message_index
+  ) => {
+    try {
+      const response = await fetch(`${api.BASE_URL}/report/figure_info`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          query: figureId,
+          index_name,
+          collection_name: index_name,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data) {
+        const obj = data.data[0];
+        const onclick = `relatedOnClick('${obj.doc_id}', '${figureId}', ${
+          obj.page_num
+        }, ${message_index}, { x: ${obj.para_element_x}, y: ${
+          obj.para_element_y
+        }, w: ${obj.para_element_w}, h: ${
           obj.para_element_h
-        }}, '${obj.title}')">《${obj.title}》</span> ${obj.doc_date} 第 ${
-          obj.page_num + 1
-        } 页</small>`,
-        img_dom: ""
-      };
+        }}, '${obj.title.replace(/(\d{2})(\d{2})(\d{2})$/gm, "$1/$2/$3")}')`;
+        return {
+          title: obj.title,
+          para: obj.para,
+          doc_id: obj.doc_id,
+          page_num: obj.page_num,
+          dom: `<div class="img-title text-xs inline">【图${count}】：<span class="text-gray-400 cursor-pointer hover:text-gray-500" onclick="${onclick}">《${obj.title.replace(
+            /(\d{2})(\d{2})(\d{2})$/gm,
+            "$1/$2/$3"
+          )}》</span> ${obj.doc_date} 第${obj.page_num + 1}页</div>`,
+          img_dom: `<img title="点击图片可以查看图片来源" data-src="${data.image}" onclick="${onclick}"/>`,
+        };
+      }
+    } catch (error) {
+      console.error("fetchFigureInfo error", figureId, error);
+      return null;
     }
-  } catch (error) {
-    console.error("fetchParaInfo error", paraId, error);
-    return null;
-  }
-};
-
-const fetchTableInfo = async (tableId, count, index_name, message_index) => {
-  try {
-    const response = await fetch(`${api.BASE_URL}/report/table_info`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        'Authorization': `Bearer ${user.token}`
-      },
-      body: JSON.stringify({
-        index_name,
-        collection_name: index_name,
-        query: tableId,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    let obj = data.data[0];
-
-    if (obj) {
-      setMessages(his => [...his])
-      const onclick = `relatedOnClick('${obj.doc_id}', '${tableId}', ${obj.page_num}, ${message_index}, { x: ${obj.para_element_x}, y: ${obj.para_element_y}, w: ${obj.para_element_w}, h: ${obj.para_element_h}}, '${obj.title}')`;
-      return {
-        title: obj.title,
-        para: obj.para,
-        doc_id: obj.doc_id,
-        page_num: obj.page_num,
-        dom: `<div class="img-title text-xs inline">【表${count}】：<span class="text-gray-400 cursor-pointer hover:text-gray-500" onclick="${onclick}">《${
-          obj.title
-        }》</span> ${obj.doc_date} 第${
-          obj.page_num + 1
-        }页</div>`,
-        img_dom: `<img title="点击图片可以查看图片来源" onclick="${onclick}" src="${
-          api.BASE_URL
-        }/table_figure/${index_name}/${tableId}" />`
-      };
-    }
-  } catch (e) {
-    console.error("fetchTableInfo error", tableId, e);
-  }
-  return null;
-};
-
-const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
-  try {
-    const response = await fetch(`${api.BASE_URL}/report/figure_info`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        'Authorization': `Bearer ${user.token}`
-      },
-      body: JSON.stringify({
-        query: figureId,
-        index_name,
-        collection_name: index_name,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data) {
-      setMessages(his => [...his])
-      const obj = data.data[0];
-      const onclick = `relatedOnClick('${obj.doc_id}', '${figureId}', ${
-        obj.page_num
-      }, ${message_index}, { x: ${obj.para_element_x}, y: ${
-        obj.para_element_y
-      }, w: ${obj.para_element_w}, h: ${
-        obj.para_element_h
-      }}, '${obj.title.replace(/(\d{2})(\d{2})(\d{2})$/gm, "$1/$2/$3")}')`;
-      return {
-        title: obj.title,
-        para: obj.para,
-        doc_id: obj.doc_id,
-        page_num: obj.page_num,
-        dom: `<div class="img-title text-xs inline">【图${count}】：<span class="text-gray-400 cursor-pointer hover:text-gray-500" onclick="${onclick}">《${obj.title.replace(
-          /(\d{2})(\d{2})(\d{2})$/gm,
-          "$1/$2/$3"
-        )}》</span> ${obj.doc_date} 第${
-          obj.page_num + 1
-        }页</div>`,
-        img_dom: `<img title="点击图片可以查看图片来源" data-src="${
-          data.image
-        }" onclick="${onclick}"/>`
-      };
-    }
-  } catch (error) {
-    console.error("fetchFigureInfo error", figureId, error);
-    return null;
-  }
-};
+  };
 
   const getRelatedInfo = (msg, index_name, message_index) => {
     if (msg in relatedInfo) {
       if (relatedInfo[msg].is_over) {
         return relatedInfo[msg].data;
       }
-      return null
+      return null;
     }
 
     if (msg.startsWith("para-")) {
@@ -259,6 +190,7 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
         fetchParaInfo(paraId, index_name, message_index).then((info) => {
           if (info) {
             relatedInfo[msg] = { is_over: true, data: info };
+            设置相关请求更新(n => (n + 1));
           }
         });
       }
@@ -269,9 +201,15 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
       if (!(msg in relatedInfo)) {
         relatedInfo[msg] = { is_over: false };
         tableCount.current++;
-        fetchTableInfo(tableId, tableCount.current, index_name, message_index).then((info) => {
+        fetchTableInfo(
+          tableId,
+          tableCount.current,
+          index_name,
+          message_index
+        ).then((info) => {
           if (info) {
             relatedInfo[msg] = { is_over: true, data: info };
+            设置相关请求更新(n => (n + 1));
           }
         });
       }
@@ -282,9 +220,15 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
       if (!(msg in relatedInfo)) {
         relatedInfo[msg] = { is_over: false };
         figureCount.current++;
-        fetchFigureInfo(figureId, figureCount.current, index_name, message_index).then((info) => {
+        fetchFigureInfo(
+          figureId,
+          figureCount.current,
+          index_name,
+          message_index
+        ).then((info) => {
           if (info) {
             relatedInfo[msg] = { is_over: true, data: info };
+            设置相关请求更新(n => (n + 1));
           }
         });
       }
@@ -307,7 +251,7 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
   const customMarked = (item, message_index) => {
     let text = item.content;
     const name_map = new Map();
-    if ('short_id_mapping' in item) {
+    if ("short_id_mapping" in item) {
       item.short_id_mapping.forEach((item) => {
         name_map.set(item[0], item[1]);
       });
@@ -360,7 +304,7 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
           ret_dom = ret_dom + related_info.img_dom;
         }
       }
-      return ret_dom || '';
+      return ret_dom || "";
     });
 
     text = text.replace(/\[\[([\w-{}]+)/g, (match, p1) => {
@@ -370,7 +314,86 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
     const regex = /<\/?del>/gi;
     text = text.replace(regex, "~");
 
-    return text;
+    // console.log(text)
+
+    return {
+      think: "",
+      content: text
+    };
+  };
+
+  const messages = useMemo(() => {
+    return data.map((item, index) => {
+      let cp_item = {...item}
+      if (cp_item.role != "user") {
+        const answer = customMarked(cp_item, index)
+        cp_item.think = answer.think || cp_item.think
+        cp_item.content = answer.content
+      }
+      return cp_item
+    })
+  }, [data, customMarked, 相关请求更新])
+
+  // 自动滚动到最新消息
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // 跟踪用户是否手动滚动
+  const [userScrolled, setUserScrolled] = useState(false);
+
+  // 监听滚动事件
+  useEffect(() => {
+    const handleWheel = (element) => {
+      // deltaY 属性表示垂直滚动方向
+      // 正值表示向下滚动，负值表示向上滚动
+      if (element.deltaY > 0) {
+        console.log('向下滚动');
+        setUserScrolled(false);
+      } else if (element.deltaY < 0) {
+        console.log('向上滚动');
+        setUserScrolled(true);
+      }
+    };
+
+    if (chatContainer.current) {
+      chatContainer.current.addEventListener("wheel", handleWheel);
+    }
+
+    return () => {
+      if (chatContainer.current) {
+        chatContainer.current.removeEventListener("wheel", handleWheel);
+      }
+    };
+  }, [chatContainer.current]);
+
+  useEffect(() => {
+    // 只有在用户没有手动滚动时，或消息列表为空时才自动滚动
+    if (!userScrolled || messages.length === 0) {
+      scrollToBottom();
+    }
+  }, [messages, userScrolled]);
+
+  // 模拟发送消息给 LLM 并获取回复
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+
+    setInput("");
+    setLoading(true);
+
+    try {
+      await onSendMessage(input.trim());
+    } catch (error) {
+      console.error("Error fetching response:", error);
+      // 可以添加错误消息到对话中
+    }
+    setLoading(false);
+  };
+
+  // 复制消息内容并显示提示
+  const copyMessage = (id) => {
+    navigator.clipboard.writeText(document.getElementById(id).textContent);
+    message.success("内容已复制到剪贴板");
   };
 
   // 处理按键事件（Enter 发送消息）- 更新为React 18兼容写法
@@ -411,21 +434,20 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
       .replace("SSS", milliseconds);
   }
 
-  useEffect(() => {
-    setMessages(data || []);
-  }, [data]);
+  // useEffect(() => {
+  //   setMessages(data || []);
+  // }, [data]);
 
   useEffect(() => {
-    window.setShowImgId = setShowImgId
-  }, [])
-
-  console.log(show_img_id)
+    window.setShowImgId = setShowImgId;
+  }, []);
 
   return (
-    <div className={`flex flex-col bg-gray-50 h-full ${className}`}>
+    <div className={`flex flex-col h-full ${className}`}>
       {/* 对话历史区域 */}
       <div
-        className={`flex-1 p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent ${
+        ref={chatContainer}
+        className={`flex-1 p-4 space-y-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent ${
           messages.length !== 0 ? "overflow-y-auto" : "overflow-y-hidden"
         }`}
       >
@@ -447,12 +469,13 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
               <div
                 className={`max-w-3xl rounded-lg p-4 ${
                   message.role === "user"
-                    ? "bg-blue-500 text-white"
+                    ? "bg-blue-100 text-gray-800 border border-blue-200"
                     : "bg-white border border-gray-200 shadow-sm"
                 }`}
               >
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-3">
                   <Avatar
+                    size={36}
                     icon={
                       message.role === "user" ? (
                         <UserOutlined />
@@ -461,70 +484,47 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
                       )
                     }
                     className={
-                      message.role === "user" ? "bg-blue-700" : "bg-green-500"
+                      message.role === "user" ? "bg-blue-500" : "bg-green-500"
                     }
                   />
-                  <span className="ml-2 font-medium">
-                    {message.role === "user" ? "你" : "AI 助手"}
-                  </span>
-                  <span className="ml-2 text-xs opacity-70">
-                    {formatTime(message.timestamp)}
-                  </span>
-                  {message.documents && <div className="ml-auto inline-block bg-amber-600 text-white rounded-md px-2 w-auto cursor-pointer text-sm" onClick={() => onRelatedClick(message)}>检索到相关文档: {message.documents.length}</div>}
+                  <div className="ml-3">
+                    <div className="font-medium text-sm">
+                      {message.role === "user" ? "你" : "AI 助手"}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {formatTime(message.timestamp)}
+                    </div>
+                  </div>
+                  {message.documents && (
+                    <div
+                      className="ml-auto inline-block bg-amber-600 text-white rounded-md px-2 py-1 w-auto cursor-pointer text-xs"
+                      onClick={() => onRelatedClick(message)}
+                    >
+                      检索到相关文档: {message.documents.length}
+                    </div>
+                  )}
                 </div>
-
 
                 <div
                   id={`copy_area_${index}`}
                   className={`prose max-w-none ${
-                    message.role === "user" ? "text-white" : "text-gray-800 markdown"
+                    message.role === "user"
+                      ? "text-gray-800"
+                      : "text-gray-800 markdown"
                   }`}
                 >
                   {message.role === "user" ? (
-                    <p className="whitespace-pre-wrap break-words">
+                    <p className="whitespace-pre-wrap break-words text-base leading-relaxed">
                       {message.content}
                     </p>
                   ) : (
-                    <ReactMarkdown
-                      rehypePlugins={[rehypeRaw]}
-                      components={{
-                        code({ node, inline, className, children, ...props }) {
-                          const match = /language-(\w+)/.exec(className || "");
-                          return !inline && match ? (
-                            <SyntaxHighlighter
-                              style={atomDark}
-                              language={match[1]}
-                              PreTag="div"
-                              wrapLines={true}
-                              showLineNumbers={true}
-                              {...props}
-                            >
-                              {String(children).replace(/\n$/, "")}
-                            </SyntaxHighlighter>
-                          ) : (
-                            <code
-                              className={`${className} px-1 py-0.5 rounded bg-gray-100 text-gray-800`}
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          );
-                        },
-                        span(props) {
-                          const onclick = props.onClick
-                          return <span {...props} onClick={() => eval(onclick)} />
-                        },
-                        img(props) {
-                          return <img onClick={() => eval(props.onClick)} src={props['data-src']} />
-                        }
-                      }}
-                    >
-                      {customMarked(message, index)}
+                    <ReactMarkdown>
+                      {message.content}
                     </ReactMarkdown>
                   )}
                 </div>
 
-                <div className="flex justify-end mt-2 space-x-2">
+                <div className="flex justify-end mt-3 space-x-2">
                   <Tooltip title="复制">
                     <Button
                       type="text"
@@ -533,7 +533,7 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
                       onClick={() => copyMessage(`copy_area_${index}`)}
                       className={`hover:opacity-80 transition-opacity ${
                         message.role === "user"
-                          ? "text-blue-100"
+                          ? "text-blue-600"
                           : "text-gray-500"
                       }`}
                     />
@@ -546,7 +546,7 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
                       onClick={() => deleteMessage(index)}
                       className={`hover:opacity-80 transition-opacity ${
                         message.role === "user"
-                          ? "text-blue-100"
+                          ? "text-blue-600"
                           : "text-gray-500"
                       }`}
                     />
@@ -573,30 +573,30 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
       </div>
 
       {/* 输入区域 */}
-      <div className="border-t border-gray-200 p-4 bg-white rounded-b-lg">
-        <div className="max-w-4xl mx-auto">
+      <Spin spinning={loading} tip="正在回答中...">
+        <div className="mb-6 mt-4 bg-gray-200 p-4 rounded-4xl shadow-sm">
           <Input.TextArea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress} // React 18中使用onKeyDown替代onKeyPress
             placeholder="输入消息，按 Enter 发送，Shift+Enter 换行..."
-            autoSize={{ minRows: 1, maxRows: 6 }}
-            className="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+            autoSize={{ minRows: 2, maxRows: 6 }}
+            className="!appearance-none !border-none !outline-none focus:!ring-0 !p-0 !bg-inherit resize-none text-base"
           />
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-xs text-gray-500">支持 Markdown 格式</span>
+          <div className="flex justify-between items-center mt-3">
             <Button
               type="primary"
               icon={<SendOutlined />}
               onClick={sendMessage}
               disabled={!input.trim() || loading}
-              className="bg-blue-500 hover:bg-blue-600 transition-colors"
+              className="ml-auto bg-blue-500 hover:bg-blue-600 transition-colors"
+              size="middle"
             >
               发送
             </Button>
           </div>
         </div>
-      </div>
+      </Spin>
     </div>
   );
 };
