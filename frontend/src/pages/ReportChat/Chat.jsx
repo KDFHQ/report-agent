@@ -26,14 +26,49 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  
+
   // 自动滚动到最新消息
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // 跟踪用户是否手动滚动
+  const [userScrolled, setUserScrolled] = useState(false);
+  
+  // 监听滚动事件
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const handleScroll = (e) => {
+      const element = e.target;
+      const isAtBottom = Math.abs(element.scrollHeight - element.scrollTop - element.clientHeight) < 10;
+      
+      // 如果用户向上滚动，标记为已滚动
+      if (!isAtBottom) {
+        setUserScrolled(true);
+      } else {
+        // 如果滚动到底部，重置标记
+        setUserScrolled(false);
+      }
+    };
+    
+    const chatContainer = document.querySelector('.overflow-y-auto');
+    if (chatContainer) {
+      chatContainer.addEventListener('scroll', handleScroll);
+    }
+    
+    return () => {
+      if (chatContainer) {
+        chatContainer.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // 只有在用户没有手动滚动时，或消息列表为空时才自动滚动
+    if (!userScrolled || messages.length === 0) {
+      scrollToBottom();
+    }
+  }, [messages, userScrolled]);
 
   // 模拟发送消息给 LLM 并获取回复
   const sendMessage = async () => {
@@ -379,6 +414,12 @@ const fetchFigureInfo = async (figureId, count, index_name, message_index) => {
   useEffect(() => {
     setMessages(data || []);
   }, [data]);
+
+  useEffect(() => {
+    window.setShowImgId = setShowImgId
+  }, [])
+
+  console.log(show_img_id)
 
   return (
     <div className={`flex flex-col bg-gray-50 h-full ${className}`}>

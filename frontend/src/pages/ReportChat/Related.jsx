@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Tabs, List, Button, Tag, Empty } from "antd";
+import { Tabs, List, Button, Tag, Empty, Spin } from "antd";
 import {
   FileTextOutlined,
   UnorderedListOutlined,
@@ -11,6 +11,7 @@ import api from "@/worker/api";
 import user from '@/worker/user'
 
 function RenderYinyong({ imageData }) {
+  const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(imageData.page);
   const [文本, 设置文本] = useState("")
 
@@ -34,6 +35,8 @@ function RenderYinyong({ imageData }) {
   }
 
   const fetchNewsData = async () => {
+    setLoading(true)
+    设置文本("")
     try {
       const response = await user.get(
         `${api.BASE_URL}/report/page_html/${imageData.index_name}/${imageData.paraId}`
@@ -43,6 +46,7 @@ function RenderYinyong({ imageData }) {
     } catch (error) {
       console.error("获取文本失败:", error);
     }
+    setLoading(false)
   };
 
   useEffect(() => {
@@ -81,7 +85,7 @@ function RenderYinyong({ imageData }) {
           )}
         </div>
 
-        <div className="flex justify-center items-center space-x-4 py-3 bg-gray-50 border-t">
+        <div className="flex justify-center items-center space-x-4 py-3">
           <Button
             type="primary"
             shape="circle"
@@ -103,7 +107,7 @@ function RenderYinyong({ imageData }) {
     );
   }
 
-  return <div></div>;
+  return <Spin spinning={loading} tip="文本加载中..."><div className="break-all whitespace-pre-wrap min-h-40" dangerouslySetInnerHTML={{ __html: 文本 }}></div></Spin>;
 }
 
 /**

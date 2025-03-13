@@ -202,9 +202,11 @@ class User {
 
   // 退出登录
   @action
-  logout() {
+  logout = () => {
     this.user_info = null;
-    localStorage.removeItem('token');
+    this.token = null
+    localStorage.removeItem(USER_INFO);
+    localStorage.removeItem(USER_TOKEN);
   }
 }
 

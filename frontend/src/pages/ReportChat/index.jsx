@@ -1,7 +1,7 @@
 import { Button, Menu, List, Spin, Popconfirm, Empty, message } from "antd";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { DeleteOutlined, MessageOutlined } from "@ant-design/icons";
+import { DeleteOutlined, LogoutOutlined } from "@ant-design/icons";
 import InfiniteScroll from "react-infinite-scroll-component";
 import Icon from "@/components/Icon";
 import user from "@/worker/user";
@@ -86,8 +86,17 @@ function LeftMenu({ className }) {
         }}
         selectedKeys={[type]}
         inlineCollapsed={collapsed}
-        className="h-full"
+        className="flex-1"
       />
+      <Popconfirm
+        title="退出账号"
+        description="确定退出账号?"
+        onConfirm={user.logout}
+        okText="退出"
+        cancelText="取消"
+      >
+        <LogoutOutlined className="absolute bottom-8 self-center text-2xl !text-white hover:!text-red-500 bg-transparent cursor-pointer" title="退出账号" />
+      </Popconfirm>
     </div>
   );
 }
@@ -167,8 +176,8 @@ export default observer(function ReportChat() {
     let all_content = "";
     await user.talkLLM(
       {
-        collection_name: "newyanbao_main",
-        index_name: "newyanbao_main",
+        collection_name: type_obj[type].index_name,
+        index_name: type_obj[type].index_name,
         question,
       },
       (data) => {
@@ -276,7 +285,7 @@ export default observer(function ReportChat() {
 
   return (
     <div className="flex w-full h-full">
-      <LeftMenu className="h-full" />
+      <LeftMenu className="relative h-full flex flex-col" />
       <History
         className="shrink-0 z-10 w-60 flex flex-col shadow"
         sessions={chat_store.sessions}
@@ -291,9 +300,15 @@ export default observer(function ReportChat() {
           }
         }}
         onDelete={deleteChatSession}
-        onCreate={() => chat_store.setSelectedSessionId(null)}
+        onCreate={() => {
+          chat_store.setSelectedSessionId(null)
+          设置显示标签(null);
+          设置显示PDF的数据(null);
+          设置显示项(null);
+        }}
       />
       <Chat
+        key={chat_store.selected_session_id}
         className="flex-1"
         data={
           chat_store.selected_session
