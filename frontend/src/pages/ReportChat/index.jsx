@@ -1,4 +1,4 @@
-import { Button, Menu, List, Spin, Popconfirm, Empty, message } from "antd";
+import { Button, Menu, List, Spin, Popconfirm, Empty, message, Tooltip } from "antd";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { DeleteOutlined, LogoutOutlined } from "@ant-design/icons";
@@ -308,39 +308,74 @@ export default observer(function ReportChat() {
         onDelete={deleteChatSession}
         onCreate={onCreate}
       />
-      <Chat
-        key={chat_store.selected_session_id}
-        className="w-full px-4 max-w-5xl mx-auto"
-        data={
-          chat_store.selected_session
-            ? chat_store.selected_session.messages
-            : []
-        }
-        onRelatedClick={(session) => {
-          设置显示标签("related");
-          设置显示项(session);
-        }}
-        onSendMessage={sendMessage}
-      />
-      {显示标签 && (
-        <Related
-          relatedItems={显示项.documents}
-          imageData={显示PDF的数据}
-          className="w-4/5 shadow overflow-y-auto"
-          actTab={显示标签}
-          onActTabChange={设置显示标签}
-          onClick={(query, paraId) => {
-            设置显示标签("yinyong");
-            设置显示PDF的数据({
-              query,
-              page: 0,
-              index_name: 显示项.index_name,
-              paraId,
-            });
+      <div className="flex flex-1 relative h-full">
+        <Chat
+          key={chat_store.selected_session_id}
+          className={`${显示标签 ? "flex-1" : "w-full"} px-4 box-border max-w-5xl mx-auto`}
+          data={
+            chat_store.selected_session
+              ? chat_store.selected_session.messages
+              : []
+          }
+          onRelatedClick={(session) => {
+            设置显示标签("related");
+            设置显示项(session);
           }}
-          onClose={() => 设置显示标签(null)}
+          onSendMessage={sendMessage}
         />
-      )}
+        {显示标签 && (
+          <>
+            <div 
+              className="w-1 shrink-0 cursor-col-resize bg-white hover:bg-blue-500 active:bg-blue-700"
+              onMouseDown={(e) => {
+                const startX = e.clientX;
+                const container = e.currentTarget.parentElement;
+                const chatEl = container.firstChild;
+                const relatedEl = container.lastChild;
+                const initialChatWidth = chatEl.getBoundingClientRect().width;
+                const containerWidth = container.getBoundingClientRect().width;
+                
+                const handleMouseMove = (moveEvent) => {
+                  const deltaX = moveEvent.clientX - startX;
+                  const newChatWidth = initialChatWidth + deltaX;
+                  const chatWidthPercent = (newChatWidth / containerWidth) * 100;
+                  const relatedWidthPercent = 100 - chatWidthPercent;
+                  
+                  if (chatWidthPercent > 20 && relatedWidthPercent > 20) {
+                    chatEl.style.flex = `0 0 ${chatWidthPercent}%`;
+                    relatedEl.style.flex = `0 0 calc(${relatedWidthPercent}%-4px)`;
+                  }
+                };
+                
+                const handleMouseUp = () => {
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                };
+                
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+              }}
+            />
+            <Related
+              relatedItems={显示项.documents}
+              imageData={显示PDF的数据}
+              className="flex-1 shadow overflow-y-auto"
+              actTab={显示标签}
+              onActTabChange={设置显示标签}
+              onClick={(query, paraId) => {
+                设置显示标签("yinyong");
+                设置显示PDF的数据({
+                  query,
+                  page: 0,
+                  index_name: 显示项.index_name,
+                  paraId,
+                });
+              }}
+              onClose={() => 设置显示标签(null)}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 });
