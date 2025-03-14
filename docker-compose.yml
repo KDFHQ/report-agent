@@ -15,4 +15,4 @@ MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAOw+Qv4thFXOOTXrjvMX9ZCV1vsbXRKw
       - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:8080
       - PASSWORD_SALT=yigeshenqideyan
     ports:
-      - 8081:8000
+      - 8777:8000
