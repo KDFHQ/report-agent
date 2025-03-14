@@ -39,7 +39,7 @@ function RenderYinyong({ imageData }) {
     设置文本("")
     try {
       const response = await user.get(
-        `${api.BASE_URL}/report/page_html/${imageData.index_name}/${imageData.paraId}`
+        `/report/page_html/${imageData.index_name}/${imageData.paraId}`
       );
   
       设置文本(extractPTags(response.data))
