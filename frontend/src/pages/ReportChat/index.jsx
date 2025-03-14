@@ -326,7 +326,7 @@ export default observer(function ReportChat() {
         <Related
           relatedItems={显示项.documents}
           imageData={显示PDF的数据}
-          className="w-1/2 shadow overflow-y-auto"
+          className="w-4/5 shadow overflow-y-auto"
           actTab={显示标签}
           onActTabChange={设置显示标签}
           onClick={(query, paraId) => {
