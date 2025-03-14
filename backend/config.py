@@ -1,22 +1,20 @@
 import os
 from typing import Dict, List
+from dotenv import load_dotenv
+
+# 首先加载环境变量
+load_dotenv()
 
 # 基础URL配置
 BASE_URLS: Dict[str, str] = {
-    "CHAT_BASE": os.getenv("CHAT_BASE_URL", "https://llmai.hibor.com.cn/zx_search_data/api"),
-    "OTHER_BASE": os.getenv("OTHER_BASE_URL", "https://llmai.hibor.com.cn/zx_search_data/api"),
-    "CUSTOM_OTHER_BASE": os.getenv("CUSTOM_OTHER_BASE", "https://llmai.hibor.com.cn/zx_search_data/api")
+    "CHAT_BASE": os.getenv("CHAT_BASE_URL", ""),
+    "OTHER_BASE": os.getenv("OTHER_BASE_URL", ""),
+    "CUSTOM_OTHER_BASE": os.getenv("CUSTOM_OTHER_BASE", "")
 }
 
-CAP_BACKEND = os.getenv("CAP_BACKEND", "http://cap-backend-app.aipaas-cap:8080")
-ZX_IMG_HOST = os.getenv("ZX_IMG_HOST", "https://cap.citicsinfo.com")
-
-ES_HOST = os.getenv("ES_HOST", "https://elastic:Nxezg5zbJJPm@47.92.83.106:9200/")
-SYS_PASSWORD = os.getenv("SYS_PASSWORD", "asdasdasd")
-PRIVATE_KEY = os.getenv("PRIVATE_KEY", """-----BEGIN PRIVATE KEY-----
-MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAOw+Qv4thFXOOTXrjvMX9ZCV1vsbXRKwjFEqX6cnMU17bTH7orv9Fidc8uYYLIB4BXSEhydYMu6lP3Gbh0j4jgnc/Kj4aWu3sLwgYDQwDDIMc73MTnO0Dhx7VX4+vAWpH5sCQYVNl6YfbWpG8GeR3Mm4FVI5bOIIrZApDKoIHzxHAgMBAAECgYBjQ3IAvP1a1HDjgBurdwi+fMc88W11GeuLeyN/547mwJLMKrBhDuGNHpgNKGEihcu8/qaPWJbmAVccFD6O4alEGwPEharDiVo2J+1JMjvUHfkYiadVz8E0vMOj/9koQF3D5aGQa/JyxZdWbj3387sy6yWXmwq71vsE3+ePpNE4QQJBAPfrwm/64+xnL8aDkhhnnYFdRPBcJIywzRmCc9mT7qZek4u01ctBA3hFpqfrfPQG9tdojXyk33V/afajvhtcKWECQQDz8RUmuNYNOJPHF7PYEDZ7ehIpglPZA0JBcNyRV4BkVxBy/nTodAsGe0GtbNm32H6/6LJTBSxiYkIFtTRJMv6nAkEAhYC8PIbTE6thK7oQAvpQ86ehBvnnaKeQWotIDUM/APHu7A1eD0ycLLj9DHGf4NybMdYIUrWJ64DIM9tq9NrFIQJBAJ3t3bC1B7eFgn7pxIBEdtFYBXwkKR6dMn7lj5b1HGVZzId2X7/CqQSoNawOhaG1otGh2BlRhxum23GQj+o3/o8CQBGiWhMiW6AuxFixs2BoHW3dM5oLHU6cG5BvA7uBqSLJUtLCGK2AiygAqUZEowUylkqJhAuqoZguaEa6ncMf8Ao=
------END PRIVATE KEY-----
-""")
+ES_HOST = os.getenv("ES_HOST", "")
+SYS_PASSWORD = os.getenv("SYS_PASSWORD", "")
+PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
 
 # API路径配置
 API_PATH_CONFIG: Dict[str, str] = {
@@ -73,3 +71,4 @@ def get_url(index_name, keywords):
 
 # 跨域配置
 CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:8080").split(",")
+SALT = os.getenv("PASSWORD_SALT", "")

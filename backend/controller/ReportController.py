@@ -6,7 +6,7 @@ import aiohttp
 import asyncio
 import json
 from typing import AsyncGenerator, Optional
-from config import CORS_ORIGINS, get_url, CAP_BACKEND, ZX_IMG_HOST
+from config import CORS_ORIGINS, get_url
 from database.elasticsearch import es_client
 from datetime import datetime
 import hashlib

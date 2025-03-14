@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
 import os
-from config import CORS_ORIGINS, get_url, CAP_BACKEND, ZX_IMG_HOST
+from config import CORS_ORIGINS, get_url
 from controller import ChatController, ReportController, UserController
 
 app = FastAPI()

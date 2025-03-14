@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from typing import Optional
 from auth import create_jwt_access_token
 from datetime import timedelta
+from config import SALT
+
 
 # 定义请求和响应模型
 class LoginRequest(BaseModel):
@@ -13,9 +15,6 @@ class LoginRequest(BaseModel):
     password: str
 
 router = APIRouter()
-
-# 从环境变量或配置文件获取盐值
-SALT = os.getenv("PASSWORD_SALT", "yigeshenqideyan")
 
 def verify_password(username: str, password: str) -> bool:
     """验证用户密码"""

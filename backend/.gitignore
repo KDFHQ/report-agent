@@ -1,2 +1,3 @@
 *.py[cod]
 /config/local_params.py
+.env
