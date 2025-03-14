@@ -35,7 +35,7 @@ async def forward_request(request: Request, user = Depends(verify_token)):
         if 'engine' not in data:
             data['engine'] = 'custom-model-20250213'
         # 验证必要字段
-        required_fields = ['index_name', 'question']
+        required_fields = ['question']
         for field in required_fields:
             if field not in data:
                 raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
@@ -83,7 +83,7 @@ async def forward_request(request: Request, user = Depends(verify_token)):
             all_content = {
                 "session_id": str(uuid.uuid4()),
                 "user_id": user_id,
-                "ai_type": data['index_name'],
+                "ai_type": data['with_remote_context'],
                 "question": data['question'],
                 "answer": "",
                 "documents": [],

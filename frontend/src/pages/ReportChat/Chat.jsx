@@ -507,7 +507,7 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
       }
       return cp_item;
     });
-  }, [data, customMarked, 相关请求更新]);
+  }, [data, 相关请求更新]);
 
   // 自动滚动到最新消息
   const scrollToBottom = () => {
@@ -545,7 +545,7 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
     if (!userScrolled || messages.length === 0) {
       scrollToBottom();
     }
-  }, [messages, userScrolled]);
+  }, [messages]);
 
   // 模拟发送消息给 LLM 并获取回复
   const sendMessage = async () => {
