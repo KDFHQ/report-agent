@@ -507,7 +507,7 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
       }
       return cp_item;
     });
-  }, [data, 相关请求更新]);
+  }, [data, show_img_id, 相关请求更新]);
 
   // 自动滚动到最新消息
   const scrollToBottom = () => {
