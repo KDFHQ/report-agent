@@ -39,7 +39,7 @@ async def forward_request(request: Request, user = Depends(verify_token)):
         for field in required_fields:
             if field not in data:
                 raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
-        url = get_url(data['index_name'], "CHAT_STREAM")
+        url = get_url(data['with_remote_context'], "CHAT_STREAM")
 
         settings = es_client.get_user_settings('system_prompt')
         
