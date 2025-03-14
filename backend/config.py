@@ -70,5 +70,5 @@ def get_url(index_name, keywords):
 
 
 # 跨域配置
-CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:8080").split(",")
+CORS_ORIGINS = ['*']
 SALT = os.getenv("PASSWORD_SALT", "yigeshenqideyan")

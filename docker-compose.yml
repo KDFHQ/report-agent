@@ -9,6 +9,5 @@ services:
       - OTHER_BASE_URL=http://106.15.124.160:7803/api
       - CUSTOM_OTHER_BASE=http://106.15.124.160:7803/api
       - ES_HOST=https://elastic:Nxezg5zbJJPm@47.92.83.106:9200/
-      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:8080
     ports:
       - "8777:8000"
