@@ -141,7 +141,7 @@ export default observer(function ReportChat() {
     }
   }
 
-  async function sendMessage(question) {
+  async function sendMessage(question, 连续对话, 时间区间) {
     let session_data = {};
     if (chat_store.selected_session) {
       session_data = chat_store.selected_session;
@@ -151,9 +151,13 @@ export default observer(function ReportChat() {
       chat_store.sessions.set(res.data.session_id, res.data);
       chat_store.setSelectedSessionId(res.data.session_id);
     }
+    let history = []
+    if (连续对话) {
+      history = JSON.parse(JSON.stringify(chat_store.selected_session.messages))
+    }
     const default_content = "思考中...";
     const answer = {
-      role: "robot",
+      role: "assistant",
       think: "",
       content: default_content,
       index_name: type_obj[type].index_name,
@@ -175,8 +179,11 @@ export default observer(function ReportChat() {
     chat_store.sessions.set(chat_store.selected_session_id, new_session);
     await user.talkLLM(
       {
-        collection_name: type_obj[type].index_name,
-        index_name: type_obj[type].index_name,
+        date_filter: 时间区间[0],
+        start_date: 时间区间[1][0],
+        end_date: 时间区间[1][1],
+        history,
+        with_remote_context: type_obj[type].index_name,
         question,
       },
       (data) => {
@@ -303,7 +310,7 @@ export default observer(function ReportChat() {
       />
       <Chat
         key={chat_store.selected_session_id}
-        className="w-full max-w-5xl mx-auto"
+        className="w-full px-4 max-w-5xl mx-auto"
         data={
           chat_store.selected_session
             ? chat_store.selected_session.messages
@@ -319,7 +326,7 @@ export default observer(function ReportChat() {
         <Related
           relatedItems={显示项.documents}
           imageData={显示PDF的数据}
-          className="w-1/4 shadow overflow-y-auto"
+          className="w-1/2 shadow overflow-y-auto"
           actTab={显示标签}
           onActTabChange={设置显示标签}
           onClick={(query, paraId) => {

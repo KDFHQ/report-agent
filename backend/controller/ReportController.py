@@ -31,8 +31,6 @@ async def forward_request(request: Request, user = Depends(verify_token)):
     try:
         data = await request.json()
         data['use_short_id'] = True
-        data['history'] = None
-        data['date_filter'] = 'auto'
         data['embedding_version'] = 3
         if 'engine' not in data:
             data['engine'] = 'custom-model-20250213'

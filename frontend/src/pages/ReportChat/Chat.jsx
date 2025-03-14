@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Input, Button, Avatar, Spin, Tooltip, message } from "antd";
+import { Input, Button, Avatar, Spin, Tooltip, message, Switch } from "antd";
 import {
   SendOutlined,
   UserOutlined,
@@ -10,12 +10,172 @@ import {
 import user from "@/worker/user";
 import api from "@/worker/api";
 import ReactMarkdown from "@/components/ReactMarkdown";
+import TimeRangeSelector from './TimeRangeSelector'
+
+/**
+ * 格式化ISO格式的时间字符串
+ * @param {string} isoTimeString - ISO格式的时间字符串，如"2025-03-12T13:18:52.358516"
+ * @param {string} format - 输出格式，默认为"YYYY-MM-DD HH:mm:ss"
+ * @returns {string} 格式化后的时间字符串
+ */
+function formatTime(isoTimeString, format = "YYYY-MM-DD HH:mm:ss") {
+  // 创建日期对象
+  const date = new Date(isoTimeString);
+
+  // 获取日期的各个部分
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
+
+  // 替换格式字符串中的占位符
+  return format
+    .replace("YYYY", year)
+    .replace("MM", month)
+    .replace("DD", day)
+    .replace("HH", hours)
+    .replace("mm", minutes)
+    .replace("ss", seconds)
+    .replace("SSS", milliseconds);
+}
+
+const History = ({ messages, onRelatedClick }) => {
+  const [隐藏的索引, 设置隐藏的索引] = useState([]);
+
+  return messages.map((message, index) => (
+    <div
+      key={index}
+      className={`flex ${
+        message.role === "user" ? "justify-end" : "justify-start"
+      }`}
+    >
+      <div
+        className={`max-w-3xl rounded-lg p-4 ${
+          message.role === "user"
+            ? "bg-blue-100 text-gray-800 border border-blue-200"
+            : "bg-white border border-gray-200 shadow-sm"
+        }`}
+      >
+        <div className="flex items-center mb-3">
+          <Avatar
+            size={36}
+            icon={
+              message.role === "user" ? (
+                <UserOutlined />
+              ) : (
+                <RobotOutlined />
+              )
+            }
+            className={
+              message.role === "user" ? "bg-blue-500" : "bg-green-500"
+            }
+          />
+          <div className="ml-3">
+            <div className="font-medium text-sm">
+              {message.role === "user" ? "你" : "AI 助手"}
+            </div>
+            <div className="text-xs text-gray-500">
+              {formatTime(message.timestamp)}
+            </div>
+          </div>
+          {message.documents && (
+            <div
+              className="ml-auto inline-block bg-amber-600 text-white rounded-md px-2 py-1 w-auto cursor-pointer text-xs"
+              onClick={() => onRelatedClick(message)}
+            >
+              检索到相关文档: {message.documents.length}
+            </div>
+          )}
+        </div>
+
+        <div
+          id={`copy_area_${index}`}
+          className={`prose max-w-none ${
+            message.role === "user"
+              ? "text-gray-800"
+              : "text-gray-800 markdown"
+          }`}
+        >
+          {message.role === "user" ? (
+            <p className="whitespace-pre-wrap break-words text-base leading-relaxed">
+              {message.content}
+            </p>
+          ) : (
+            <>
+              {message.think && <div className="flex flex-col mb-2">
+                <div
+                  className="flex items-center bg-blue-400 text-white rounded-md px-2 mr-auto cursor-pointer"
+                  onClick={() =>
+                    设置隐藏的索引((ids) => {
+                      if (ids.indexOf(index) === -1) {
+                        // 如果不存在，就添加
+                        return [...ids, index];
+                      } else {
+                        // 如果存在，就删除
+                        return ids.filter((item) => item !== index);
+                      }
+                    })
+                  }
+                >
+                  点击{隐藏的索引.indexOf(index) == -1 ? "隐藏" : "展开"}思考内容
+                  <LeftOutlined
+                    className="ml-1 mt-[1px]"
+                    rotate={隐藏的索引.indexOf(index) == -1 ? -90 : 180}
+                  />
+                </div>
+                {隐藏的索引.indexOf(index) == -1 && (
+                  <div className="think my-1">
+                    <ReactMarkdown>{message.think}</ReactMarkdown>
+                  </div>
+                )}
+              </div>}
+              <ReactMarkdown>{message.content}</ReactMarkdown>
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-end mt-3 space-x-2">
+          <Tooltip title="复制">
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => copyMessage(`copy_area_${index}`)}
+              className={`hover:opacity-80 transition-opacity ${
+                message.role === "user"
+                  ? "text-blue-600"
+                  : "text-gray-500"
+              }`}
+            />
+          </Tooltip>
+          {/* <Tooltip title="删除">
+            <Button
+              type="text"
+              size="small"
+              icon={<DeleteOutlined />}
+              onClick={() => deleteMessage(index)}
+              className={`hover:opacity-80 transition-opacity ${
+                message.role === "user"
+                  ? "text-blue-600"
+                  : "text-gray-500"
+              }`}
+            />
+          </Tooltip> */}
+        </div>
+      </div>
+    </div>
+  ))
+}
 
 // 使用 Tailwind CSS 进行样式设计
 
 const relatedInfo = {};
 const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
-  const [隐藏的索引, 设置隐藏的索引] = useState([]);
+  const [时间区间, 设置时间区间] = useState(['auto', [null, null]])
+  const [连续对话, 设置连续对话] = useState(false)
   const figureCount = useRef(0);
   const tableCount = useRef(0);
   const chatContainer = useRef(null);
@@ -395,7 +555,7 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
     setLoading(true);
 
     try {
-      await onSendMessage(input.trim());
+      await onSendMessage(input.trim(), 连续对话, 时间区间);
     } catch (error) {
       console.error("Error fetching response:", error);
       // 可以添加错误消息到对话中
@@ -416,37 +576,6 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
       sendMessage();
     }
   };
-
-  /**
-   * 格式化ISO格式的时间字符串
-   * @param {string} isoTimeString - ISO格式的时间字符串，如"2025-03-12T13:18:52.358516"
-   * @param {string} format - 输出格式，默认为"YYYY-MM-DD HH:mm:ss"
-   * @returns {string} 格式化后的时间字符串
-   */
-  function formatTime(isoTimeString, format = "YYYY-MM-DD HH:mm:ss") {
-    // 创建日期对象
-    const date = new Date(isoTimeString);
-
-    // 获取日期的各个部分
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    const seconds = String(date.getSeconds()).padStart(2, "0");
-    const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
-
-    // 替换格式字符串中的占位符
-    return format
-      .replace("YYYY", year)
-      .replace("MM", month)
-      .replace("DD", day)
-      .replace("HH", hours)
-      .replace("mm", minutes)
-      .replace("ss", seconds)
-      .replace("SSS", milliseconds);
-  }
-
   // useEffect(() => {
   //   setMessages(data || []);
   // }, [data]);
@@ -471,131 +600,7 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
               <p>开始一个新对话吧</p>
             </div>
           </div>
-        ) : (
-          messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-3xl rounded-lg p-4 ${
-                  message.role === "user"
-                    ? "bg-blue-100 text-gray-800 border border-blue-200"
-                    : "bg-white border border-gray-200 shadow-sm"
-                }`}
-              >
-                <div className="flex items-center mb-3">
-                  <Avatar
-                    size={36}
-                    icon={
-                      message.role === "user" ? (
-                        <UserOutlined />
-                      ) : (
-                        <RobotOutlined />
-                      )
-                    }
-                    className={
-                      message.role === "user" ? "bg-blue-500" : "bg-green-500"
-                    }
-                  />
-                  <div className="ml-3">
-                    <div className="font-medium text-sm">
-                      {message.role === "user" ? "你" : "AI 助手"}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatTime(message.timestamp)}
-                    </div>
-                  </div>
-                  {message.documents && (
-                    <div
-                      className="ml-auto inline-block bg-amber-600 text-white rounded-md px-2 py-1 w-auto cursor-pointer text-xs"
-                      onClick={() => onRelatedClick(message)}
-                    >
-                      检索到相关文档: {message.documents.length}
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  id={`copy_area_${index}`}
-                  className={`prose max-w-none ${
-                    message.role === "user"
-                      ? "text-gray-800"
-                      : "text-gray-800 markdown"
-                  }`}
-                >
-                  {message.role === "user" ? (
-                    <p className="whitespace-pre-wrap break-words text-base leading-relaxed">
-                      {message.content}
-                    </p>
-                  ) : (
-                    <>
-                      {message.think && <div className="flex flex-col mb-2">
-                        <div
-                          className="flex items-center bg-blue-400 text-white rounded-md px-2 mr-auto cursor-pointer"
-                          onClick={() =>
-                            设置隐藏的索引((ids) => {
-                              if (ids.indexOf(index) === -1) {
-                                // 如果不存在，就添加
-                                return [...ids, index];
-                              } else {
-                                // 如果存在，就删除
-                                return ids.filter((item) => item !== index);
-                              }
-                            })
-                          }
-                        >
-                          点击{隐藏的索引.indexOf(index) == -1 ? "隐藏" : "展开"}思考内容
-                          <LeftOutlined
-                            className="ml-1 mt-[1px]"
-                            rotate={隐藏的索引.indexOf(index) == -1 ? -90 : 180}
-                          />
-                        </div>
-                        {隐藏的索引.indexOf(index) == -1 && (
-                          <div className="think my-1">
-                            <ReactMarkdown>{message.think}</ReactMarkdown>
-                          </div>
-                        )}
-                      </div>}
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
-                    </>
-                  )}
-                </div>
-
-                <div className="flex justify-end mt-3 space-x-2">
-                  <Tooltip title="复制">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<CopyOutlined />}
-                      onClick={() => copyMessage(`copy_area_${index}`)}
-                      className={`hover:opacity-80 transition-opacity ${
-                        message.role === "user"
-                          ? "text-blue-600"
-                          : "text-gray-500"
-                      }`}
-                    />
-                  </Tooltip>
-                  {/* <Tooltip title="删除">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<DeleteOutlined />}
-                      onClick={() => deleteMessage(index)}
-                      className={`hover:opacity-80 transition-opacity ${
-                        message.role === "user"
-                          ? "text-blue-600"
-                          : "text-gray-500"
-                      }`}
-                    />
-                  </Tooltip> */}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
+        ) : <History messages={messages} onRelatedClick={onRelatedClick} />}
 
         {/* {loading && (
           <div className="flex justify-start">
@@ -624,6 +629,10 @@ const ChatComponent = ({ className, data, onRelatedClick, onSendMessage }) => {
             className="!appearance-none !border-none !outline-none focus:!ring-0 !p-0 !bg-inherit resize-none text-base"
           />
           <div className="flex justify-between items-center mt-3">
+            <Switch className="!mr-4" checkedChildren="连续对话" unCheckedChildren="单轮对话" value={连续对话} onChange={b => 设置连续对话(b)} />
+            <TimeRangeSelector value={时间区间} onChange={(range, date_range) => {
+              设置时间区间([range, date_range])
+            }} />
             <Button
               type="primary"
               icon={<SendOutlined />}
