@@ -8,8 +8,7 @@ load_dotenv()
 # 基础URL配置
 BASE_URLS: Dict[str, str] = {
     "CHAT_BASE": os.getenv("CHAT_BASE_URL", ""),
-    "OTHER_BASE": os.getenv("OTHER_BASE_URL", ""),
-    "CUSTOM_OTHER_BASE": os.getenv("CUSTOM_OTHER_BASE", "")
+    "OTHER_BASE": os.getenv("OTHER_BASE_URL", "")
 }
 
 ES_HOST = os.getenv("ES_HOST", "")
@@ -38,21 +37,12 @@ def build_api_endpoints() -> Dict[str, str]:
     endpoints: Dict[str, str] = {}
     
     for endpoint, path in API_PATH_CONFIG.items():
+        base_url = BASE_URLS['OTHER_BASE']
         if endpoint == "CHAT_STREAM":
             # chat_stream的前缀不变
             base_url = BASE_URLS["CHAT_BASE"]
-            env_path = os.getenv(f"{endpoint}_PATH", path)
-            local_env_path = os.getenv(f"CUSTOM_{endpoint}_PATH", path)
-            # 构建一份远程地址
-            endpoints[endpoint] = f"{base_url}{env_path}"
-            # 构建一份本地的访问地址
-            endpoints[f"CUSTOM_{endpoint}"] = f"{base_url}{local_env_path}"
-        else:
-            env_path = os.getenv(f"{endpoint}_PATH", path)
-            # 构建一份远程地址
-            endpoints[endpoint] = f"{BASE_URLS['OTHER_BASE']}{env_path}"
-            # 构建一份本地的访问地址
-            endpoints[f"CUSTOM_{endpoint}"] = f"{BASE_URLS['CUSTOM_OTHER_BASE']}{env_path}"
+        env_path = os.getenv(f"{endpoint}_PATH", path)
+        endpoints[endpoint] = f"{base_url}{env_path}"
     
     return endpoints
 
@@ -61,6 +51,7 @@ def build_api_endpoints() -> Dict[str, str]:
 API_ENDPOINTS: Dict[str, str] = build_api_endpoints()
 
 def get_url(index_name, keywords):
+    return API_ENDPOINTS[keywords]
     # 如果在这里是访问远程的
     if index_name in ['newyanbao_main', 'newyanbao_eng_main', 'notice_main', 'news_main', 'jiyao_main', 'newyanbao_main,newyanbao_eng_main', 'newyanbao_eng_main,newyanbao_main']:
         return API_ENDPOINTS[keywords]
