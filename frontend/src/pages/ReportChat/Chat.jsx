@@ -9,7 +9,7 @@ import {
 } from "@ant-design/icons";
 import user from "@/worker/user";
 import api from "@/worker/api";
-import ReactMarkdown from "./ReactMarkdown";
+import ReactMarkdown from "@/components/ReactMarkdown";
 
 // 使用 Tailwind CSS 进行样式设计
 

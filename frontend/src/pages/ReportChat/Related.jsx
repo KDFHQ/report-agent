@@ -7,13 +7,14 @@ import {
   RightOutlined,
 } from "@ant-design/icons";
 import PdfViewer from "@/components/PdfViewer";
+import ReactMarkdown from "@/components/ReactMarkdown";
 import api from "@/worker/api";
-import user from '@/worker/user'
+import user from "@/worker/user";
 
 function RenderYinyong({ imageData }) {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(imageData.page);
-  const [文本, 设置文本] = useState("")
+  const [文本, 设置文本] = useState("");
 
   const handlePrevPage = () => {
     setPage((prevPage) => Math.max(0, prevPage - 1));
@@ -26,33 +27,38 @@ function RenderYinyong({ imageData }) {
   function extractPTags(str) {
     // 先处理转义字符
     str = str.replace(/\\"/g, '"');
-    
+
     // 创建临时DOM来解析HTML
     const parser = new DOMParser();
-    const doc = parser.parseFromString(str, 'text/html');
-    const pTags = doc.getElementsByTagName('p');
-    return Array.from(pTags).map(p => p.outerHTML).join('');
+    const doc = parser.parseFromString(str, "text/html");
+    const pTags = doc.getElementsByTagName("p");
+    return Array.from(pTags)
+      .map((p) => p.outerHTML)
+      .join("");
   }
 
   const fetchNewsData = async () => {
-    setLoading(true)
-    设置文本("")
+    setLoading(true);
+    设置文本("");
     try {
       const response = await user.get(
         `/report/page_html/${imageData.index_name}/${imageData.paraId}`
       );
-  
-      设置文本(extractPTags(response.data))
+
+      设置文本(extractPTags(response.data));
     } catch (error) {
       console.error("获取文本失败:", error);
     }
-    setLoading(false)
+    setLoading(false);
   };
 
   useEffect(() => {
     setPage(imageData.page);
-    if (["newyanbao_main", "newyanbao_eng_main"].indexOf(imageData.index_name) == -1) {
-      fetchNewsData()
+    if (
+      ["newyanbao_main", "newyanbao_eng_main"].indexOf(imageData.index_name) ==
+      -1
+    ) {
+      fetchNewsData();
     }
   }, [imageData]);
 
@@ -107,7 +113,13 @@ function RenderYinyong({ imageData }) {
     );
   }
 
-  return <Spin spinning={loading} tip="文本加载中..."><div className="break-all whitespace-pre-wrap min-h-40" dangerouslySetInnerHTML={{ __html: 文本 }}></div></Spin>;
+  return (
+    <Spin spinning={loading} tip="文本加载中...">
+      <div className="break-all whitespace-pre-wrap min-h-40">
+        <ReactMarkdown>{文本}</ReactMarkdown>
+      </div>
+    </Spin>
+  );
 }
 
 /**
@@ -142,7 +154,7 @@ const RelatedReferenceTabs = ({
     if (actTab !== activeTab) {
       onActTabChange && onActTabChange(activeTab);
     }
-  }, [activeTab])
+  }, [activeTab]);
 
   // 定义 Tabs 的 items 配置
   const tabItems = [
