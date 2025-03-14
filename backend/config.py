@@ -13,7 +13,7 @@ BASE_URLS: Dict[str, str] = {
 }
 
 ES_HOST = os.getenv("ES_HOST", "")
-SYS_PASSWORD = os.getenv("SYS_PASSWORD", "")
+SYS_PASSWORD = os.getenv("SYS_PASSWORD", "2fcx1KPZJuNJ")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
 
 # API路径配置
@@ -71,4 +71,4 @@ def get_url(index_name, keywords):
 
 # 跨域配置
 CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:8080").split(",")
-SALT = os.getenv("PASSWORD_SALT", "")
+SALT = os.getenv("PASSWORD_SALT", "yigeshenqideyan")
